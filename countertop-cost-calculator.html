@@ -464,6 +464,14 @@
     </div>
   </div>
 
+  <div class="card">
+    <h2>Payment</h2>
+    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:var(--text);">
+      <input type="checkbox" id="includePayBtn" checked style="width:18px; height:18px; margin:0;">
+      Include "Pay Invoice Online" button on PDF
+    </label>
+  </div>
+
   <div class="total-card">
     <div class="label">Total Cost</div>
     <div class="amount" id="totalOut">$0.00</div>
@@ -524,6 +532,7 @@
   })();
 
   const SINK_PRICE = 150;
+  const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/00w7sDati7mJ0rj6Nf5gc00";
   let counterId = 0;
   const countertopsEl = document.getElementById("countertops");
 
@@ -935,6 +944,30 @@
     doc.setFontSize(14);
     doc.text("Total Due", margin, y);
     doc.text(fmt(total), pageWidth - margin, y, { align: "right" });
+
+    // Pay Now button (links to Stripe payment link) - only if toggled on
+    const includePayBtn = document.getElementById("includePayBtn").checked;
+    if(includePayBtn){
+      y += 26;
+      const btnW = 160, btnH = 32;
+      const btnX = pageWidth - margin - btnW;
+      const btnY = y;
+      doc.setFillColor(24, 24, 24);
+      doc.roundedRect(btnX, btnY, btnW, btnH, 6, 6, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.text("Pay Invoice Online", btnX + btnW / 2, btnY + btnH / 2 + 4, { align: "center" });
+      doc.link(btnX, btnY, btnW, btnH, { url: STRIPE_PAYMENT_LINK });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text(STRIPE_PAYMENT_LINK, btnX + btnW / 2, btnY + btnH + 12, { align: "center" });
+      doc.setTextColor(0);
+      y = btnY + btnH + 20;
+    } else {
+      y += 16;
+    }
 
     const notes = document.getElementById("quoteNotes").value;
     if(notes){
