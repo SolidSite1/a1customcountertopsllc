@@ -998,16 +998,32 @@
     }catch(capErr){
       if(capErr && capErr.code === "declined") { usedCapability = true; }
     }
-    if(!usedCapability){
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "A1-Countertops-Invoice.pdf";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    if(usedCapability) return;
+
+    // Mobile browsers (Android Chrome/Samsung Internet, iOS Safari) frequently
+    // fail or silently drop plain <a download> blob downloads, especially when
+    // the page is opened inside an in-app/webview browser without direct
+    // filesystem write access. The native Share sheet is far more reliable
+    // there since it hands the file off to the OS, so try that first.
+    try{
+      const file = new File([blob], "A1-Countertops-Invoice.pdf", { type: "application/pdf" });
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: "A1 Custom Countertops Invoice" });
+        return;
+      }
+    }catch(shareErr){
+      if(shareErr && shareErr.name === "AbortError") return; // user cancelled share sheet
+      // otherwise fall through to the download-link fallback below
     }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "A1-Countertops-Invoice.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
   document.getElementById("pdfBtn").addEventListener("click", async () => {
